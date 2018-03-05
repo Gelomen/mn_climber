@@ -1,0 +1,16 @@
+{application, mn_climber, [
+    {description, "An OTP library"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [kernel, stdlib, lager]},
+    {env, [
+        {auto_upgrade, true},
+        {auto_init, true}
+    ]},
+    {mod, {mn_climber_app, []}},
+    {modules, []},
+
+    {maintainers, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.
