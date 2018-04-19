@@ -38,7 +38,11 @@ all_attr_modules(Attr, Value) ->
                     {ok, Modules} <- [application:get_key(App, modules)]])),
     lists:filter(
         fun(Module) ->
-            lists:member({Attr, Value}, Module:module_info(attributes))
+            case catch Module:module_info(attributes) of
+                {'EXIT', _} -> false;
+                Attributes ->
+                    lists:member({Attr, Value}, Attributes)
+            end
         end, Targets).
 
 build_acyclic_graph(VertexFun, EdgeFun, Graph) ->
