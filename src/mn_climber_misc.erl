@@ -80,13 +80,9 @@ loaded_applications_modules() ->
                 {ok, Modules} <- [application:get_key(App, modules)]])).
 
 module_attributes(Module) ->
-    try
-        Module:module_info(attributes)
-    catch
-        _:undef ->
-            io:format("WARNING: module ~p not found, so not scanned for boot steps.~n",
-                [Module]),
-            []
+    case catch Module:module_info(attributes) of
+        {'EXIT', _} -> [];
+        Attributes -> Attributes
     end.
 
 decompose_pid(Pid) when is_pid(Pid) ->
