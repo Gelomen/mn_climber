@@ -32,14 +32,14 @@ all_module_attributes(Name) ->
 
 all_attr_modules(Attr, Value) ->
     Targets = loaded_applications_modules(),
-    lists:filter(
-        fun({_App, Module}) ->
+    [Module || {_App, Module} <- Targets,
+        begin
             case catch Module:module_info(attributes) of
                 {'EXIT', _} -> false;
                 Attributes ->
                     lists:member({Attr, Value}, Attributes)
             end
-        end, Targets).
+        end].
 
 build_acyclic_graph(VertexFun, EdgeFun, Graph) ->
     G = digraph:new([acyclic]),
