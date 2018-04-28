@@ -43,11 +43,7 @@ empty_db_no_table(_) ->
 
 %% 空数据库,建立表
 empty_db_create_table(_) ->
-    meck:new(mn_climber_misc, [passthrough]),
-    meck:expect(mn_climber_misc, all_attr_modules,
-        fun(behavior, _) -> [mn_ct_table];
-            (_, _) -> [] end),
-    meck:new(mn_ct_table, [non_strict]),
+    meck:new(mn_climber, [passthrough]),
     Definitions = [
         {mn_parent, [
             {disc_copies, [node()]},
@@ -56,25 +52,19 @@ empty_db_create_table(_) ->
             {match, #mn_parent{children = #children{_ = '_'}, _ = '_'}}
         ]}
     ],
-    meck:expect(mn_ct_table, table_definitions, 0, Definitions),
-    [mn_parent] = mn_climber_table:names(),
+    meck:expect(mn_climber, definitions, 0, Definitions),
 
     {ok, _Apps} = application:ensure_all_started(mn_climber),
     0 = mnesia:table_info(mn_parent, size),
 
-    meck:unload(mn_ct_table),
-    meck:unload(mn_climber_misc),
+    meck:unload(mn_climber),
 
     stop_app(),
     ok.
 
 %% 表结构冲突
 table_conflict(_) ->
-    meck:new(mn_climber_misc, [passthrough]),
-    meck:expect(mn_climber_misc, all_attr_modules,
-        fun(behavior, _) -> [mn_ct_table];
-            (_, _) -> [] end),
-    meck:new(mn_ct_table, [non_strict]),
+    meck:new(mn_climber, [passthrough]),
     %旧结构
     OldDefinitions = [
         {mn_parent, [
@@ -84,7 +74,7 @@ table_conflict(_) ->
             {match, #mn_parent{children = #children{_ = '_'}, _ = '_'}}
         ]}
     ],
-    meck:expect(mn_ct_table, table_definitions, 0, OldDefinitions),
+    meck:expect(mn_climber, definitions, 0, OldDefinitions),
 
     % 启动
     {ok, _Apps} = application:ensure_all_started(mn_climber),
@@ -109,7 +99,7 @@ table_conflict(_) ->
             {match, {mn_parent, '_', '_', '_', '_', #children{_ = '_'}, '_'}}
         ]}
     ],
-    meck:expect(mn_ct_table, table_definitions, 0, NewDefinitions),
+    meck:expect(mn_climber, definitions, 0, NewDefinitions),
 
     % 检查
     {error, {schema_integrity_check_failed, [
@@ -126,21 +116,18 @@ table_conflict(_) ->
     % 再检查一遍
     ok = (catch mn_climber_mnesia:init()),
 
-    meck:unload(mn_ct_table),
-    meck:unload(mn_climber_misc),
+    meck:unload(mn_climber),
 
     stop_app(),
     ok.
 
 %% 自动更新表结构
 auto_upgrade(_) ->
+    meck:new(mn_climber, [passthrough]),
     meck:new(mn_climber_misc, [passthrough]),
     meck:new(mn_ct_upgrade, [non_strict]),
     meck:new(mn_ct_table, [non_strict]),
 
-    meck:expect(mn_climber_misc, all_attr_modules,
-        fun(behavior, _) -> [mn_ct_table];
-            (_, _) -> [] end),
     %旧结构
     OldDefinitions = [
         {mn_parent, [
@@ -150,7 +137,7 @@ auto_upgrade(_) ->
             {match, #mn_parent{children = #children{_ = '_'}, _ = '_'}}
         ]}
     ],
-    meck:expect(mn_ct_table, table_definitions, 0, OldDefinitions),
+    meck:expect(mn_climber, definitions, 0, OldDefinitions),
 
     {ok, _Apps} = application:ensure_all_started(mn_climber),
     mnesia:dirty_write(#mn_parent{id = 1, children = #children{id = 2}}),
@@ -166,7 +153,7 @@ auto_upgrade(_) ->
             {match, {mn_parent, '_', '_', '_', '_', #children{_ = '_'}, '_'}}
         ]}
     ],
-    meck:expect(mn_ct_table, table_definitions, 0, NewDefinitions),
+    meck:expect(mn_climber, definitions, 0, NewDefinitions),
 
     % 转换为新结构
     meck:expect(mn_climber_misc, all_module_attributes, 1,
@@ -187,7 +174,7 @@ auto_upgrade(_) ->
     stop_app(),
 
     % 旧结构
-    meck:expect(mn_ct_table, table_definitions, 0, OldDefinitions),
+    meck:expect(mn_climber, definitions, 0, OldDefinitions),
 
     % 转换为旧结构
     meck:expect(mn_climber_misc, all_module_attributes, 1,
@@ -204,8 +191,7 @@ auto_upgrade(_) ->
     % 启动
     {ok, _} = application:ensure_all_started(mn_climber),
 
-    meck:unload(mn_ct_upgrade),
-    meck:unload(mn_ct_table),
+    meck:unload(mn_climber),
     meck:unload(mn_climber_misc),
 
     stop_app(),
@@ -214,12 +200,7 @@ auto_upgrade(_) ->
 rename_node_name(Config) ->
     OldNode = 'old_node_name@127.0.0.1',
 
-    meck:new(mn_climber_misc, [passthrough]),
-    meck:new(mn_ct_table, [non_strict]),
-
-    meck:expect(mn_climber_misc, all_attr_modules,
-        fun(behavior, _) -> [mn_ct_table];
-            (_, _) -> [] end),
+    meck:new(mn_climber, [passthrough]),
     % 结构
     Definitions = [
         {mn_parent, [
@@ -229,7 +210,7 @@ rename_node_name(Config) ->
             {match, #mn_parent{children = #children{_ = '_'}, _ = '_'}}
         ]}
     ],
-    meck:expect(mn_ct_table, table_definitions, 0, Definitions),
+    meck:expect(mn_climber, definitions, 0, Definitions),
 
     OldMnesiaDir0 = filename:join([?config(data_dir, Config), "Mnesia.old_node_name@127.0.0.1"]),
     ok = application:set_env(mnesia, dir, OldMnesiaDir0),
@@ -239,8 +220,7 @@ rename_node_name(Config) ->
 
     mn_climber_mnesia_rename:rename(node(), [{OldNode, node()}]),
 
-    meck:unload(mn_ct_table),
-    meck:unload(mn_climber_misc),
+    meck:unload(mn_climber),
     ok.
 
 %%====================================================================

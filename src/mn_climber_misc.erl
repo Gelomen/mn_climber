@@ -31,13 +31,9 @@ all_module_attributes(Name) ->
         end, [], Targets).
 
 all_attr_modules(Attr, Value) ->
-    Targets =
-        lists:usort(
-            lists:append(
-                [Modules || {App, _, _} <- application:loaded_applications(),
-                    {ok, Modules} <- [application:get_key(App, modules)]])),
+    Targets = loaded_applications_modules(),
     lists:filter(
-        fun(Module) ->
+        fun({_App, Module}) ->
             case catch Module:module_info(attributes) of
                 {'EXIT', _} -> false;
                 Attributes ->
@@ -77,6 +73,9 @@ loaded_applications_modules() ->
         lists:append(
             [[{App, Module} || Module <- Modules] ||
                 {App, _, _} <- application:loaded_applications(),
+                begin
+                    application:get_env(App, use_mn_climber, false)
+                end,
                 {ok, Modules} <- [application:get_key(App, modules)]])).
 
 module_attributes(Module) ->
@@ -86,8 +85,7 @@ module_attributes(Module) ->
     end.
 
 decompose_pid(Pid) when is_pid(Pid) ->
-    %% see http://erlang.org/doc/apps/erts/erl_ext_dist.html (8.10 and
-    %% 8.7)
+    %% see http://erlang.org/doc/apps/erts/erl_ext_dist.html (8.10 and 8.7)
     Node = node(Pid),
     BinPid = term_to_binary(Pid),
     ByteSize = byte_size(BinPid),

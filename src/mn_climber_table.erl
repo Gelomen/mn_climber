@@ -20,13 +20,16 @@
     create/0, wait_for_replicated/1, wait/1,
     force_load/0, is_present/0, is_empty/0,
     check_schema_integrity/1, clear_ram_only_tables/0, retry_timeout/0,
-    wait_for_replicated/0, definitions/0
+    wait_for_replicated/0,
+    get_definitions_from_modules/0
 ]).
 
 -include("mn_climber_log.hrl").
 
-%%----------------------------------------------------------------------------
 -type retry() :: boolean().
+-type table_name() :: atom().
+-type table_define() :: list().
+-type table_definitions() :: [{table_name(), table_define()}].
 
 -callback table_definitions() -> list().
 
@@ -39,7 +42,7 @@ create() ->
     lists:foreach(
         fun({Tab, TabDef}) ->
             create_table(Tab, TabDef)
-        end, definitions()),
+        end, mn_climber:definitions()),
     ok.
 
 -spec create_table(atom(), list()) -> ok.
@@ -59,7 +62,7 @@ wait_for_replicated() ->
 
 -spec wait_for_replicated(retry()) -> 'ok'.
 wait_for_replicated(Retry) ->
-    wait([Tab || {Tab, _TabDef} <- definitions()], Retry).
+    wait([Tab || {Tab, _TabDef} <- mn_climber:definitions()], Retry).
 
 -spec wait([atom()]) -> 'ok'.
 wait(TableNames) ->
@@ -181,7 +184,7 @@ check_content(Tab, TabDef) ->
     end.
 
 check(Fun) ->
-    case [Error || {Tab, TabDef} <- definitions(),
+    case [Error || {Tab, TabDef} <- mn_climber:definitions(),
         begin
             {Ret, Error} =
                 case Fun(Tab, TabDef) of
@@ -198,9 +201,11 @@ check(Fun) ->
 %% Table definitions
 %%--------------------------------------------------------------------
 
-names() -> [Tab || {Tab, _} <- definitions()].
+-spec names() -> [table_name()].
+names() -> [TableName || {TableName, _} <- mn_climber:definitions()].
 
-definitions() ->
+-spec get_definitions_from_modules() -> table_definitions().
+get_definitions_from_modules() ->
     lists:append([Module:table_definitions() || Module <-
         mn_climber_misc:all_attr_modules(behavior, [?MODULE]) ++
         mn_climber_misc:all_attr_modules(behaviour, [?MODULE])]).

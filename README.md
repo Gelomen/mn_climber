@@ -3,7 +3,7 @@ mn_climber
 从rabbitmq server的代码中,分离了与`mnesia`相关的模块,同时去除了集群的相关代码
 
 ## 使用
-只要将`mn_climber`在开发应用之前启动即可
+只需将`mn_climber`加入到应用的依赖应用列表即可,并且将`{use_mn_climber, true}`加入到应用的`env`
 
 ## auto_init开关说明
 ```erlang
@@ -43,8 +43,10 @@ table_definitions() ->
 % Name :: atom().
 % Requires :: [atom()].
 -mn_climber_upgrade({Name, Requires}).
+
+'Name'() -> ok.
 ```
-`Name`是操作的名字,同时也是执行操作的函数名,当操作需要执行的时候,会调用本模块下的与`Name`同名的函数名,因此,这个函数必须导出,参数个数为0;
+`Name`是操作的名字,同时也是执行操作的函数名,当操作需要执行的时候,会调用本模块下的与`Name`同名的函数名,因此,这个函数必须导出,参数个数为0,返回值必须为`ok`;
 `Requires`是当前操作的前置操作名列表,如果指定了这个值,当前操作将会在`Requires`列表里的操作执行后才会执行当前更新操作.
 
 ## 当运行有mnesia的node需要重命名时
