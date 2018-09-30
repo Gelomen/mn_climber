@@ -19,7 +19,14 @@ start(_StartType, _StartArgs) ->
     stopped = mnesia:stop(),
     % new ets for insert table definitions
     ets:new(mn_climber_table, [named_table, public, set]),
-    ets:insert(mn_climber_table, mn_climber_table:get_definitions_from_modules()),
+    case mn_climber_misc:is_empty_apps() of
+        true ->
+            ?WARNING("!!! empty_apps !!!"),
+            ?WARNING("Please add {use_mn_climber, true} to your app env");
+        _ ->
+            Definitions = mn_climber_table:get_definitions_from_modules(),
+            ets:insert(mn_climber_table, Definitions)
+    end,
     % auto_upgrade
     case application:get_env(mn_climber, auto_upgrade) of
         {ok, true} ->

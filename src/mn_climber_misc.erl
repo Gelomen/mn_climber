@@ -4,6 +4,7 @@
 -export([
     ensure_ok/2,
     format/2,
+    is_empty_apps/0,
     all_module_attributes/1,
     all_attr_modules/2,
     build_acyclic_graph/3,
@@ -18,6 +19,13 @@ ensure_ok(ok, _) -> ok;
 ensure_ok({error, Reason}, ErrorTag) -> throw({error, {ErrorTag, Reason}}).
 
 format(Fmt, Args) -> lists:flatten(io_lib:format(Fmt, Args)).
+
+is_empty_apps() ->
+    Apps = [App || {App, _, _} <- application:loaded_applications(),
+        begin
+            application:get_env(App, use_mn_climber, false)
+        end],
+    Apps == [].
 
 all_module_attributes(Name) ->
     Targets = loaded_applications_modules(),
